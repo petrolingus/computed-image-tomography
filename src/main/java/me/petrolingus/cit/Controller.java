@@ -49,9 +49,10 @@ public class Controller {
         imageView2.setImage(getImageFromPixels(monochromePixels));
 
         // Rotate image
-        double h = 2.0 * Math.PI / (256 - 1);
-        double[][] processedPixels = new double[256][256];
-        for (int k = 0; k < 256; k++) {
+        int angleSamples = 256;
+        double h = 2.0 * Math.PI / (angleSamples - 1);
+        double[][] processedPixels = new double[angleSamples][256];
+        for (int k = 0; k < angleSamples; k++) {
             double angle = k * h;
             double[][] rotatedPixels = new double[256][256];
             for (int i = 0; i < 256; i++) {
@@ -75,16 +76,16 @@ public class Controller {
 
         // FFT
         FastFourierTransformer fft = new FastFourierTransformer(DftNormalization.STANDARD);
-        Complex[][] fftComplexPixels = new Complex[256][256];
-        for (int i = 0; i < 256; i++) {
+        Complex[][] fftComplexPixels = new Complex[angleSamples][256];
+        for (int i = 0; i < angleSamples; i++) {
             Complex[] transform = fft.transform(processedPixels[i], TransformType.FORWARD);
             for (int j = 0; j < 128; j++) {
                 fftComplexPixels[i][j] = transform[128 + j];
                 fftComplexPixels[i][j + 128] = transform[j];
             }
         }
-        double[][] fftPixels = new double[256][256];
-        for (int i = 0; i < 256; i++) {
+        double[][] fftPixels = new double[angleSamples][256];
+        for (int i = 0; i < angleSamples; i++) {
             for (int j = 0; j < 256; j++) {
                 fftPixels[i][j] = Math.log10(fftComplexPixels[i][j].abs());
             }
@@ -165,16 +166,18 @@ public class Controller {
     }
 
     private void normalize(double[][] matrix) {
+        int w = matrix[0].length;
+        int h = matrix.length;
         double max = Double.MIN_VALUE;
         double min = Double.MAX_VALUE;
-        for (int i = 0; i < 256; i++) {
-            for (int j = 0; j < 256; j++) {
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
                 max = Math.max(max, matrix[i][j]);
                 min = Math.min(min, matrix[i][j]);
             }
         }
-        for (int i = 0; i < 256; i++) {
-            for (int j = 0; j < 256; j++) {
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
                 matrix[i][j] = (matrix[i][j] - min) / (max - min);
             }
         }
