@@ -7,7 +7,7 @@ import org.apache.commons.math3.transform.TransformType;
 
 public class ImageFourier {
 
-    private static final FastFourierTransformer fft = new FastFourierTransformer(DftNormalization.STANDARD);
+    public static final FastFourierTransformer fft = new FastFourierTransformer(DftNormalization.STANDARD);
 
     public static Complex[][] fft(Complex[][] pixels) {
 
@@ -53,6 +53,23 @@ public class ImageFourier {
 
         int w = pixels[0].length;
         int h = pixels.length;
+
+//        Complex[][] temp1 = new Complex[h][w];
+//        for (int i = 0; i < w; i++) {
+//            Complex[] col = new Complex[w];
+//            for (int j = 0; j < h; j++) {
+//                col[j] = pixels[j][i];
+//            }
+//            Complex[] transform = fft.transform(col, TransformType.INVERSE);
+//            for (int j = 0; j < 256; j++) {
+//                temp1[j][i] = transform[j];
+//            }
+//        }
+//
+//        Complex[][] temp2 = new Complex[h][w];
+//        for (int i = 0; i < h; i++) {
+//            temp2[i] = fft.transform(temp1[i], TransformType.INVERSE);
+//        }
 
         Complex[][] temp1 = new Complex[h][w];
         for (int i = 0; i < h; i++) {
