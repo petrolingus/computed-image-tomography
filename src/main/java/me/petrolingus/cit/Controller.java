@@ -38,7 +38,8 @@ public class Controller {
     public void initialize() throws FileNotFoundException {
 
         // Load image
-        URL resource = Main.class.getResource("squares256.png");
+//        URL resource = Main.class.getResource("squares256.png");
+        URL resource = Main.class.getResource("simple256.jpg");
 //        URL resource = Main.class.getResource("aqua256.jpg");
         if (resource == null) {
             return;
@@ -63,6 +64,36 @@ public class Controller {
 //        process1(monochromePixels);
 //        process2(monochromePixels);
         process3(monochromePixels);
+
+//        double[][] test1 = new double[256][256];
+//        for (int i = 0; i < 256; i++) {
+//            for (int j = 0; j < 256; j++) {
+//                if (j < 128) {
+//                    if (i < 128) {
+//                        test1[i][j] = 0;
+//                    } else {
+//                        test1[i][j] = 0.25;
+//                    }
+//                } else {
+//                    if (i < 128) {
+//                        test1[i][j] = 0.5;
+//                    } else {
+//                        test1[i][j] = 0.75;
+//                    }
+//                }
+//            }
+//        }
+//        imageView1.setImage(getImageFromPixels(test1));
+//
+//        double[][] test2 = new double[256][256];
+//        for (int i = 0; i < 256; i++) {
+//            for (int j = 0; j < 256; j++) {
+//                int x = (j < 128) ? j + 128 : j - 128;
+//                int y = (i < 128) ? i + 128 : i - 128;
+//                test2[i][j] = test1[y][x];
+//            }
+//        }
+//        imageView2.setImage(getImageFromPixels(test2));
     }
 
     private void process3(double[][] monochromePixels) {
@@ -107,11 +138,7 @@ public class Controller {
             double[] finalSensors = normalize(sensors);
 
             Complex[] fft = ImageFourier.fft.transform(sensors, TransformType.FORWARD);
-            Complex[] fft2 = new Complex[256];
-            for (int i = 0; i < 128; i++) {
-                fft2[i] = fft[i + 128];
-                fft2[i + 128] = fft[i];
-            }
+            Complex[] fft2 = swap(fft);
 
             double[] absfft = new double[256];
             for (int i = 0; i < 256; i++) {
@@ -125,7 +152,8 @@ public class Controller {
                 if (x < 0 || x > 255 || y < 0 || y > 255) {
                     continue;
                 }
-                radon2[y][x] = new Complex(fft2[j].getReal(), 0);
+//                radon2[y][x] = new Complex(fft2[j].getReal(), 0);
+                radon2[y][x] = fft2[j];
             }
             double[][] abs = new double[256][256];
             for (int i = 0; i < 256; i++) {
@@ -137,6 +165,8 @@ public class Controller {
                 }
             }
 
+            Complex[][] shitfRadon = swap(radon2);
+
             Complex[][] ifft = ImageFourier.ifft(radon2);
             double[][] result = new double[256][256];
             for (int i = 0; i < 256; i++) {
@@ -144,14 +174,16 @@ public class Controller {
                     if (ifft[i][j] == null) {
                         continue;
                     }
-                    result[i][j] = Math.log1p(ifft[i][j].abs());
+                    result[i][j] = ifft[i][j].abs();
                 }
             }
+
+            double[][] result2 = swap(result);
 
             Platform.runLater(() -> {
                 imageView1.setImage(getImageFromPixels(normalize(rotate)));
                 imageView2.setImage(getImageFromPixels(normalize(abs)));
-                imageView3.setImage(getImageFromPixels(normalize(result)));
+                imageView3.setImage(getImageFromPixels(normalize(result2)));
 
                 XYChart.Series<Number, Number> series = new XYChart.Series<>();
                 for (int i = 0; i < 256; i++) {
@@ -171,90 +203,7 @@ public class Controller {
                 }
                 chart2.getData().add(series2);
             });
-
-
         }, 0, 32, TimeUnit.MILLISECONDS);
-
-
-//        double[][] rotate = new double[256][256];
-//        Complex[][] twofft = new Complex[256][256];
-//        for (int i = 0; i < 256; i++) {
-//            for (int j = 0; j < 256; j++) {
-//                twofft[i][j] = Complex.ZERO;
-//            }
-//        }
-//        int n = 256;
-//        double h = Math.PI / (n - 1);
-//        for (int a = 0; a < n; a++) {
-//            double angle = a * h;
-//            for (int i = 0; i < 256; i++) {
-//                for (int j = 0; j < 256; j++) {
-//                    int x = (int) Math.floor((j - 128) * Math.cos(angle) + (i - 128) * Math.sin(angle)) + 128;
-//                    int y = (int) Math.floor(-(j - 128) * Math.sin(angle) + (i - 128) * Math.cos(angle)) + 128;
-//                    if (x < 0 || x > 255 || y < 0 || y > 255) {
-//                        continue;
-//                    }
-//                    rotate[i][j] = monochromePixels[y][x];
-//                }
-//            }
-//            imageView3.setImage(getImageFromPixels(rotate));
-//            double[] xrays = new double[256];
-//            for (int i = 0; i < 256; i++) {
-//                for (int j = 0; j < 256; j++) {
-//                    xrays[i] += rotate[j][i];
-//                }
-//            }
-//            Complex[] fftxrays = ImageFourier.fft.transform(xrays, TransformType.FORWARD);
-//            Complex[] fftxrays2 = new Complex[256];
-//            for (int i = 0; i < 128; i++) {
-//                fftxrays2[i] = fftxrays[i + 128];
-//                fftxrays2[i + 128] = fftxrays[i];
-//            }
-//            for (int j = 0; j < 256; j++) {
-//                int x = (int) Math.floor((j - 128) * Math.cos(angle) + 128);
-//                int y = (int) Math.floor((j - 128) * Math.sin(angle) + 128);
-//                if (x < 0 || x > 255 || y < 0 || y > 255) {
-//                    continue;
-//                }
-//                double re = fftxrays2[j].getReal() * Math.cos(angle);
-//                double im = -fftxrays2[j].getImaginary() * Math.sin(angle);
-//                twofft[y][x] = twofft[y][x].add(new Complex(im, re)).divide(2);
-//            }
-////                for (int i = 0; i < 256; i++) {
-////                    for (int j = 0; j < 256; j++) {
-////                        double re = twofft[i][j].getReal() * Math.cos(twofft[i][j].getArgument());
-////                        double im = twofft[i][j].getImaginary() * Math.sin(twofft[i][j].getArgument());
-////                        twofft[i][j] = new Complex(re, im);
-////                    }
-////                }
-//            double[][] res = new double[256][256];
-//            for (int i = 0; i < 256; i++) {
-//                for (int j = 0; j < 256; j++) {
-//                    res[i][j] = Math.log1p(twofft[i][j].abs());
-//                }
-//            }
-//            imageView4.setImage(getImageFromPixels(normalize(res)));
-
-//            Complex[][] ifft = ImageFourier.ifft(temp);
-//            double[][] res2 = new double[256][256];
-//            for (int i = 0; i < 256; i++) {
-//                for (int j = 0; j < 256; j++) {
-//                    int x = (j < 128) ? 128 + j : j - 128;
-//                    int y = (i < 128) ? 128 + i : i - 128;
-//                    res2[i][j] = ifft[y][x].abs();
-//                }
-//            }
-//            imageView5.setImage(getImageFromPixels(normalize(res2)));
-//
-//            double[][] res3 = new double[256][256];
-//            for (int i = 0; i < 256; i++) {
-//                for (int j = 0; j < 256; j++) {
-//                    res3[i][j] = ifft[i][j].abs();
-//                }
-//            }
-//            imageView6.setImage(getImageFromPixels(normalize(res3)));
-//        }
-
     }
 
     private void process2(double[][] monochromePixels) {
@@ -472,6 +421,39 @@ public class Controller {
         double[] result = new double[vector.length];
         for (int i = 0; i < vector.length; i++) {
             result[i] = (vector[i] - min) / (max - min);
+        }
+        return result;
+    }
+
+    private double[][] swap(double[][] matrix) {
+        double[][] result = new double[256][256];
+        for (int i = 0; i < 256; i++) {
+            for (int j = 0; j < 256; j++) {
+                int x = (j < 128) ? j + 128 : j - 128;
+                int y = (i < 128) ? i + 128 : i - 128;
+                result[i][j] = matrix[y][x];
+            }
+        }
+        return result;
+    }
+
+    private Complex[][] swap(Complex[][] matrix) {
+        Complex[][] result = new Complex[256][256];
+        for (int i = 0; i < 256; i++) {
+            for (int j = 0; j < 256; j++) {
+                int x = (j < 128) ? j + 128 : j - 128;
+                int y = (i < 128) ? i + 128 : i - 128;
+                result[i][j] = matrix[y][x];
+            }
+        }
+        return result;
+    }
+
+    private Complex[] swap(Complex[] vector) {
+        Complex[] result = new Complex[256];
+        for (int i = 0; i < 256; i++) {
+            int y = (i < 128) ? i + 128 : i - 128;
+            result[i] = vector[y];
         }
         return result;
     }
