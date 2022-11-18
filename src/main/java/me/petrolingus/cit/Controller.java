@@ -71,6 +71,11 @@ public class Controller {
         double h = Math.PI / (n - 1);
         AtomicInteger counter = new AtomicInteger();
         Complex[][] radon2 = new Complex[256][256];
+        for (int i = 0; i < 256; i++) {
+            for (int j = 0; j < 256; j++) {
+                radon2[i][j] = new Complex(0, 0);
+            }
+        }
 
         ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
         service.scheduleWithFixedDelay(() -> {
@@ -132,9 +137,21 @@ public class Controller {
                 }
             }
 
+            Complex[][] ifft = ImageFourier.ifft(radon2);
+            double[][] result = new double[256][256];
+            for (int i = 0; i < 256; i++) {
+                for (int j = 0; j < 256; j++) {
+                    if (ifft[i][j] == null) {
+                        continue;
+                    }
+                    result[i][j] = Math.log1p(ifft[i][j].abs());
+                }
+            }
+
             Platform.runLater(() -> {
                 imageView1.setImage(getImageFromPixels(normalize(rotate)));
                 imageView2.setImage(getImageFromPixels(normalize(abs)));
+                imageView3.setImage(getImageFromPixels(normalize(result)));
 
                 XYChart.Series<Number, Number> series = new XYChart.Series<>();
                 for (int i = 0; i < 256; i++) {
