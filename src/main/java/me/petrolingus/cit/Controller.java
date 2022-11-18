@@ -38,8 +38,8 @@ public class Controller {
     public void initialize() throws FileNotFoundException {
 
         // Load image
-//        URL resource = Main.class.getResource("squares256.png");
-        URL resource = Main.class.getResource("simple256.jpg");
+        URL resource = Main.class.getResource("squares256.png");
+//        URL resource = Main.class.getResource("simple256.jpg");
 //        URL resource = Main.class.getResource("aqua256.jpg");
         if (resource == null) {
             return;
@@ -120,8 +120,8 @@ public class Controller {
             double[][] rotate = new double[256][256];
             for (int i = 0; i < 256; i++) {
                 for (int j = 0; j < 256; j++) {
-                    int x = (int) ((j - 128) * Math.cos(angle) + (i - 128) * Math.sin(angle)) + 128;
-                    int y = (int) (-(j - 128) * Math.sin(angle) + (i - 128) * Math.cos(angle)) + 128;
+                    int x = (int) Math.round((j - 128) * Math.cos(angle) - (i - 128) * Math.sin(angle)) + 128;
+                    int y = (int) Math.round((j - 128) * Math.sin(angle) + (i - 128) * Math.cos(angle)) + 128;
                     if (x < 0 || x > 255 || y < 0 || y > 255) {
                         continue;
                     }
@@ -137,7 +137,7 @@ public class Controller {
             }
             double[] finalSensors = normalize(sensors);
 
-            Complex[] fft = ImageFourier.fft.transform(sensors, TransformType.FORWARD);
+            Complex[] fft = ImageFourier.fft.transform(finalSensors, TransformType.FORWARD);
             Complex[] fft2 = swap(fft);
 
             double[] absfft = new double[256];
@@ -147,43 +147,48 @@ public class Controller {
             double[] finalAbsfft = normalize(absfft);
 
             for (int j = 0; j < 256; j++) {
-                int x = (int) ((j - 128) * Math.cos(angle)) + 128;
-                int y = (int) (-(j - 128) * Math.sin(angle)) + 128;
+                int x = (int) Math.round((j - 128) * Math.cos(angle) + 128);
+                int y = (int) Math.round((j - 128) * Math.sin(angle) + 128);
                 if (x < 0 || x > 255 || y < 0 || y > 255) {
                     continue;
                 }
-//                radon2[y][x] = new Complex(fft2[j].getReal(), 0);
+//                double re = fft2[j].getReal() * Math.cos(angle);
+//                double im = fft2[j].getImaginary() * Math.sin(angle);
+//                radon2[y][x] = new Complex(re, im);
                 radon2[y][x] = fft2[j];
             }
+            Complex[][] shitfRadon = swap(radon2);
+//            for (int i = 0; i < 256; i++) {
+//                for (int j = 0; j < 256; j++) {
+//                    if (i < 128 && j < 128) {
+//                        shitfRadon[i][j] = new Complex(shitfRadon[i][j].getReal(), 0);
+//                    } else {
+//                        shitfRadon[i][j] = new Complex(shitfRadon[i][j].getImaginary(), 0);
+//                    }
+//                }
+//            }
+
             double[][] abs = new double[256][256];
             for (int i = 0; i < 256; i++) {
                 for (int j = 0; j < 256; j++) {
-                    if (radon2[i][j] == null) {
-                        continue;
-                    }
-                    abs[i][j] = Math.log1p(radon2[i][j].abs());
+                    abs[i][j] = Math.log1p(shitfRadon[i][j].abs());
                 }
             }
 
-            Complex[][] shitfRadon = swap(radon2);
-
-            Complex[][] ifft = ImageFourier.ifft(radon2);
+            Complex[][] ifft = ImageFourier.ifft(shitfRadon);
             double[][] result = new double[256][256];
             for (int i = 0; i < 256; i++) {
                 for (int j = 0; j < 256; j++) {
-                    if (ifft[i][j] == null) {
-                        continue;
-                    }
                     result[i][j] = ifft[i][j].abs();
                 }
             }
-
             double[][] result2 = swap(result);
 
             Platform.runLater(() -> {
                 imageView1.setImage(getImageFromPixels(normalize(rotate)));
                 imageView2.setImage(getImageFromPixels(normalize(abs)));
-                imageView3.setImage(getImageFromPixels(normalize(result2)));
+                imageView3.setImage(getImageFromPixels(normalize(result)));
+                imageView4.setImage(getImageFromPixels(normalize(result2)));
 
                 XYChart.Series<Number, Number> series = new XYChart.Series<>();
                 for (int i = 0; i < 256; i++) {

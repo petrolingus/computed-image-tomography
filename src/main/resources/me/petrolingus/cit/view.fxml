@@ -31,7 +31,7 @@
                   <ImageView fx:id="imageView4" fitHeight="300.0" fitWidth="300.0" pickOnBounds="true" preserveRatio="true" GridPane.rowIndex="1" />
                   <ImageView fx:id="imageView5" fitHeight="300.0" fitWidth="300.0" pickOnBounds="true" preserveRatio="true" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                   <ImageView fx:id="imageView6" fitHeight="300.0" fitWidth="300.0" pickOnBounds="true" preserveRatio="true" GridPane.columnIndex="2" GridPane.rowIndex="1" />
-                  <AreaChart fx:id="chart" animated="false" createSymbols="false" legendVisible="false" GridPane.rowIndex="1">
+                  <AreaChart fx:id="chart" animated="false" createSymbols="false" legendVisible="false" GridPane.columnIndex="1" GridPane.rowIndex="1">
                     <xAxis>
                       <NumberAxis side="BOTTOM" />
                     </xAxis>
@@ -39,7 +39,7 @@
                       <NumberAxis side="LEFT" />
                     </yAxis>
                   </AreaChart>
-                  <AreaChart fx:id="chart2" animated="false" createSymbols="false" legendVisible="false" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                  <AreaChart fx:id="chart2" animated="false" createSymbols="false" legendVisible="false" GridPane.columnIndex="2" GridPane.rowIndex="1">
                      <xAxis>
                         <NumberAxis side="BOTTOM" />
                      </xAxis>
