@@ -1,14 +1,20 @@
 package me.petrolingus.cit;
 
+import javafx.application.Platform;
+import javafx.scene.chart.AreaChart;
+import javafx.scene.chart.StackedAreaChart;
+import javafx.scene.chart.XYChart;
 import javafx.scene.image.*;
 import org.apache.commons.math3.complex.Complex;
-import org.apache.commons.math3.transform.DftNormalization;
-import org.apache.commons.math3.transform.FastFourierTransformer;
 import org.apache.commons.math3.transform.TransformType;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.net.URL;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Controller {
 
@@ -26,6 +32,9 @@ public class Controller {
     public ImageView imageView51;
     public ImageView imageView61;
 
+    public AreaChart<Number, Number> chart;
+    public AreaChart<Number, Number> chart2;
+
     public void initialize() throws FileNotFoundException {
 
         // Load image
@@ -38,7 +47,7 @@ public class Controller {
         // Draw raw image 1
         FileInputStream inputStream = new FileInputStream(resource.getPath());
         Image image = new Image(inputStream);
-        imageView1.setImage(image);
+//        imageView1.setImage(image);
 
         // Make monochrome image 2
         PixelReader pixelReader = image.getPixelReader();
@@ -49,75 +58,165 @@ public class Controller {
             }
         }
         monochromePixels = normalize(monochromePixels);
-        imageView2.setImage(getImageFromPixels(monochromePixels));
+//        imageView2.setImage(getImageFromPixels(monochromePixels));
 
-        process1(monochromePixels);
-        process2(monochromePixels);
+//        process1(monochromePixels);
+//        process2(monochromePixels);
+        process3(monochromePixels);
     }
 
     private void process3(double[][] monochromePixels) {
 
-        double[][] rotate = new double[256][256];
-        Complex[][] twofft = new Complex[256][256];
-        for (int i = 0; i < 256; i++) {
-            for (int j = 0; j < 256; j++) {
-                twofft[i][j] = Complex.ZERO;
-            }
-        }
-        int n = 256;
+        int n = 180;
         double h = Math.PI / (n - 1);
-        for (int a = 0; a < n; a++) {
-            double angle = a * h;
+        AtomicInteger counter = new AtomicInteger();
+        Complex[][] radon2 = new Complex[256][256];
+
+        ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
+        service.scheduleWithFixedDelay(() -> {
+
+            double angle = h * counter.get();
+            counter.getAndIncrement();
+            if (counter.get() == n) {
+                service.shutdown();
+            }
+
+            double[][] rotate = new double[256][256];
             for (int i = 0; i < 256; i++) {
                 for (int j = 0; j < 256; j++) {
-                    int x = (int) Math.floor((j - 128) * Math.cos(angle) + (i - 128) * Math.sin(angle)) + 128;
-                    int y = (int) Math.floor(-(j - 128) * Math.sin(angle) + (i - 128) * Math.cos(angle)) + 128;
+                    int x = (int) ((j - 128) * Math.cos(angle) + (i - 128) * Math.sin(angle)) + 128;
+                    int y = (int) (-(j - 128) * Math.sin(angle) + (i - 128) * Math.cos(angle)) + 128;
                     if (x < 0 || x > 255 || y < 0 || y > 255) {
                         continue;
                     }
                     rotate[i][j] = monochromePixels[y][x];
                 }
             }
-            imageView3.setImage(getImageFromPixels(rotate));
-            double[] xrays = new double[256];
+
+            double[] sensors = new double[256];
             for (int i = 0; i < 256; i++) {
                 for (int j = 0; j < 256; j++) {
-                    xrays[i] += rotate[j][i];
+                    sensors[i] += rotate[j][i];
                 }
             }
-            Complex[] fftxrays = ImageFourier.fft.transform(xrays, TransformType.FORWARD);
-            Complex[] fftxrays2 = new Complex[256];
+            double[] finalSensors = normalize(sensors);
+
+            Complex[] fft = ImageFourier.fft.transform(sensors, TransformType.FORWARD);
+            Complex[] fft2 = new Complex[256];
             for (int i = 0; i < 128; i++) {
-                fftxrays2[i] = fftxrays[i + 128];
-                fftxrays2[i + 128] = fftxrays[i];
+                fft2[i] = fft[i + 128];
+                fft2[i + 128] = fft[i];
             }
+
+            double[] absfft = new double[256];
+            for (int i = 0; i < 256; i++) {
+                absfft[i] = fft2[i].abs();
+            }
+            double[] finalAbsfft = normalize(absfft);
+
             for (int j = 0; j < 256; j++) {
-                int x = (int) Math.floor((j - 128) * Math.cos(angle) + 128);
-                int y = (int) Math.floor((j - 128) * Math.sin(angle) + 128);
+                int x = (int) ((j - 128) * Math.cos(angle)) + 128;
+                int y = (int) (-(j - 128) * Math.sin(angle)) + 128;
                 if (x < 0 || x > 255 || y < 0 || y > 255) {
                     continue;
                 }
-                double re = fftxrays2[j].getReal() * Math.cos(angle);
-                double im = -fftxrays2[j].getImaginary() * Math.sin(angle);
-                twofft[y][x] = twofft[y][x].add(new Complex(im, re)).divide(2);
+                radon2[y][x] = new Complex(fft2[j].getReal(), 0);
             }
-//                for (int i = 0; i < 256; i++) {
-//                    for (int j = 0; j < 256; j++) {
-//                        double re = twofft[i][j].getReal() * Math.cos(twofft[i][j].getArgument());
-//                        double im = twofft[i][j].getImaginary() * Math.sin(twofft[i][j].getArgument());
-//                        twofft[i][j] = new Complex(re, im);
-//                    }
-//                }
-            double[][] res = new double[256][256];
+            double[][] abs = new double[256][256];
             for (int i = 0; i < 256; i++) {
                 for (int j = 0; j < 256; j++) {
-                    res[i][j] = Math.log1p(twofft[i][j].abs());
+                    if (radon2[i][j] == null) {
+                        continue;
+                    }
+                    abs[i][j] = Math.log1p(radon2[i][j].abs());
                 }
             }
-            imageView4.setImage(getImageFromPixels(normalize(res)));
+
+            Platform.runLater(() -> {
+                imageView1.setImage(getImageFromPixels(normalize(rotate)));
+                imageView2.setImage(getImageFromPixels(normalize(abs)));
+
+                XYChart.Series<Number, Number> series = new XYChart.Series<>();
+                for (int i = 0; i < 256; i++) {
+                    series.getData().add(new XYChart.Data<>(i, finalSensors[i]));
+                }
+                if(chart.getData().size() != 0) {
+                    chart.getData().clear();
+                }
+                chart.getData().add(series);
+
+                XYChart.Series<Number, Number> series2 = new XYChart.Series<>();
+                for (int i = 0; i < 256; i++) {
+                    series2.getData().add(new XYChart.Data<>(i, finalAbsfft[i]));
+                }
+                if(chart2.getData().size() != 0) {
+                    chart2.getData().clear();
+                }
+                chart2.getData().add(series2);
+            });
 
 
+        }, 0, 32, TimeUnit.MILLISECONDS);
 
+
+//        double[][] rotate = new double[256][256];
+//        Complex[][] twofft = new Complex[256][256];
+//        for (int i = 0; i < 256; i++) {
+//            for (int j = 0; j < 256; j++) {
+//                twofft[i][j] = Complex.ZERO;
+//            }
+//        }
+//        int n = 256;
+//        double h = Math.PI / (n - 1);
+//        for (int a = 0; a < n; a++) {
+//            double angle = a * h;
+//            for (int i = 0; i < 256; i++) {
+//                for (int j = 0; j < 256; j++) {
+//                    int x = (int) Math.floor((j - 128) * Math.cos(angle) + (i - 128) * Math.sin(angle)) + 128;
+//                    int y = (int) Math.floor(-(j - 128) * Math.sin(angle) + (i - 128) * Math.cos(angle)) + 128;
+//                    if (x < 0 || x > 255 || y < 0 || y > 255) {
+//                        continue;
+//                    }
+//                    rotate[i][j] = monochromePixels[y][x];
+//                }
+//            }
+//            imageView3.setImage(getImageFromPixels(rotate));
+//            double[] xrays = new double[256];
+//            for (int i = 0; i < 256; i++) {
+//                for (int j = 0; j < 256; j++) {
+//                    xrays[i] += rotate[j][i];
+//                }
+//            }
+//            Complex[] fftxrays = ImageFourier.fft.transform(xrays, TransformType.FORWARD);
+//            Complex[] fftxrays2 = new Complex[256];
+//            for (int i = 0; i < 128; i++) {
+//                fftxrays2[i] = fftxrays[i + 128];
+//                fftxrays2[i + 128] = fftxrays[i];
+//            }
+//            for (int j = 0; j < 256; j++) {
+//                int x = (int) Math.floor((j - 128) * Math.cos(angle) + 128);
+//                int y = (int) Math.floor((j - 128) * Math.sin(angle) + 128);
+//                if (x < 0 || x > 255 || y < 0 || y > 255) {
+//                    continue;
+//                }
+//                double re = fftxrays2[j].getReal() * Math.cos(angle);
+//                double im = -fftxrays2[j].getImaginary() * Math.sin(angle);
+//                twofft[y][x] = twofft[y][x].add(new Complex(im, re)).divide(2);
+//            }
+////                for (int i = 0; i < 256; i++) {
+////                    for (int j = 0; j < 256; j++) {
+////                        double re = twofft[i][j].getReal() * Math.cos(twofft[i][j].getArgument());
+////                        double im = twofft[i][j].getImaginary() * Math.sin(twofft[i][j].getArgument());
+////                        twofft[i][j] = new Complex(re, im);
+////                    }
+////                }
+//            double[][] res = new double[256][256];
+//            for (int i = 0; i < 256; i++) {
+//                for (int j = 0; j < 256; j++) {
+//                    res[i][j] = Math.log1p(twofft[i][j].abs());
+//                }
+//            }
+//            imageView4.setImage(getImageFromPixels(normalize(res)));
 
 //            Complex[][] ifft = ImageFourier.ifft(temp);
 //            double[][] res2 = new double[256][256];
@@ -137,7 +236,7 @@ public class Controller {
 //                }
 //            }
 //            imageView6.setImage(getImageFromPixels(normalize(res3)));
-        }
+//        }
 
     }
 
@@ -152,6 +251,8 @@ public class Controller {
                 fft2[i][j] = fft[y][x];
             }
         }
+
+//        Complex[][] fft3 = ImageFourier.ifft(fft2);
 
         double[][] abs = new double[256][256];
         double[][] real = new double[256][256];
@@ -225,8 +326,8 @@ public class Controller {
 
     private void process1(double[][] monochromePixels) {
 
-        int n = 10000;
-        double h = Math.PI / (n - 1);
+        int n = 100;
+        double h = 0.9 * Math.PI / (n - 1);
 
         // Create radon image
         double[][] radon = new double[n][256];
@@ -235,8 +336,8 @@ public class Controller {
             double[][] rotatedPixels = new double[256][256];
             for (int i = 0; i < 256; i++) {
                 for (int j = 0; j < 256; j++) {
-                    int x = (int) Math.floor((j - 128) * Math.cos(angle) + (i - 128) * Math.sin(angle)) + 128;
-                    int y = (int) Math.floor(-(j - 128) * Math.sin(angle) + (i - 128) * Math.cos(angle)) + 128;
+                    int x = (int) Math.round((j - 128) * Math.cos(angle) + (i - 128) * Math.sin(angle)) + 128;
+                    int y = (int) Math.round(-(j - 128) * Math.sin(angle) + (i - 128) * Math.cos(angle)) + 128;
                     if (x < 0 || x > 255 || y < 0 || y > 255) {
                         continue;
                     }
@@ -245,7 +346,7 @@ public class Controller {
             }
             for (int i = 0; i < 256; i++) {
                 for (int j = 0; j < 256; j++) {
-                    radon[k][i] += rotatedPixels[i][j];
+                    radon[k][i] += rotatedPixels[j][i];
                 }
             }
         }
@@ -260,8 +361,8 @@ public class Controller {
         for (int i = 0; i < n; i++) {
             Complex[] transform = ImageFourier.fft.transform(radon[i], TransformType.FORWARD);
             for (int j = 0; j < 128; j++) {
-                fft4[i][j] = transform[j + 128];
-                fft4[i][j + 128] = transform[j];
+                fft4[i][j] = transform[j + 127];
+                fft4[i][j + 127] = transform[j];
             }
         }
 
@@ -280,9 +381,13 @@ public class Controller {
                 if (x < 0 || x > 255 || y < 0 || y > 255) {
                     continue;
                 }
-                fft5[y][x] = fft4[k][i];
+                double re = fft4[k][i].getReal() * Math.cos(angle);
+                double im = fft4[k][i].getImaginary() * Math.sin(angle);
+                fft5[y][x] = new Complex(re, im);
             }
         }
+
+//        Complex[][] fft6 = ImageFourier.ifft(fft5);
 
         // Visualization of FFT spectrum
         double[][] abs = new double[256][256];
@@ -298,10 +403,10 @@ public class Controller {
                 argument[i][j] = complex.getArgument();
             }
         }
-        imageView3.setImage(getImageFromPixels(normalize(abs)));
-        imageView4.setImage(getImageFromPixels(normalize(real)));
-        imageView5.setImage(getImageFromPixels(normalize(imaginary)));
-        imageView6.setImage(getImageFromPixels(normalize(argument)));
+        imageView1.setImage(getImageFromPixels(normalize(abs)));
+        imageView2.setImage(getImageFromPixels(normalize(real)));
+        imageView3.setImage(getImageFromPixels(normalize(imaginary)));
+        imageView4.setImage(getImageFromPixels(normalize(argument)));
     }
 
     private Image getImageFromPixels(double[][] pixels) {
@@ -336,6 +441,20 @@ public class Controller {
             for (int j = 0; j < w; j++) {
                 result[i][j] = (matrix[i][j] - min) / (max - min);
             }
+        }
+        return result;
+    }
+
+    private double[] normalize(double[] vector) {
+        double min = vector[0];
+        double max = vector[0];
+        for (int i = 0; i < vector.length; i++) {
+            min = Math.min(min, vector[i]);
+            max = Math.max(max, vector[i]);
+        }
+        double[] result = new double[vector.length];
+        for (int i = 0; i < vector.length; i++) {
+            result[i] = (vector[i] - min) / (max - min);
         }
         return result;
     }
