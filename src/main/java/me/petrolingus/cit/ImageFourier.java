@@ -9,31 +9,6 @@ public class ImageFourier {
 
     public static final FastFourierTransformer fft = new FastFourierTransformer(DftNormalization.STANDARD);
 
-    public static Complex[][] fft(Complex[][] pixels) {
-
-        int w = pixels[0].length;
-        int h = pixels.length;
-
-        Complex[][] temp1 = new Complex[h][w];
-        for (int i = 0; i < h; i++) {
-            temp1[i] = fft.transform(pixels[i], TransformType.FORWARD);
-        }
-
-        Complex[][] temp2 = new Complex[h][w];
-        for (int i = 0; i < h; i++) {
-            Complex[] col = new Complex[h];
-            for (int j = 0; j < 256; j++) {
-                col[j] = temp1[j][i];
-            }
-            Complex[] transform = fft.transform(col, TransformType.FORWARD);
-            for (int j = 0; j < 256; j++) {
-                temp2[j][i] = transform[j];
-            }
-        }
-
-        return temp2;
-    }
-
     public static Complex[][] fft(double[][] pixels) {
 
         int w = pixels[0].length;
@@ -49,31 +24,22 @@ public class ImageFourier {
         return fft(temp);
     }
 
-    public static Complex[][] ifft(Complex[][] pixels) {
+    public static Complex[][] fft(Complex[][] image) {
+        return transform(image, TransformType.FORWARD);
+    }
 
-        int w = pixels[0].length;
-        int h = pixels.length;
+    public static Complex[][] ifft(Complex[][] image) {
+        return transform(image, TransformType.INVERSE);
+    }
 
-//        Complex[][] temp1 = new Complex[h][w];
-//        for (int i = 0; i < w; i++) {
-//            Complex[] col = new Complex[w];
-//            for (int j = 0; j < h; j++) {
-//                col[j] = pixels[j][i];
-//            }
-//            Complex[] transform = fft.transform(col, TransformType.INVERSE);
-//            for (int j = 0; j < 256; j++) {
-//                temp1[j][i] = transform[j];
-//            }
-//        }
-//
-//        Complex[][] temp2 = new Complex[h][w];
-//        for (int i = 0; i < h; i++) {
-//            temp2[i] = fft.transform(temp1[i], TransformType.INVERSE);
-//        }
+    private static Complex[][] transform(Complex[][] image, TransformType transformType) {
+
+        int w = image[0].length;
+        int h = image.length;
 
         Complex[][] temp1 = new Complex[h][w];
         for (int i = 0; i < h; i++) {
-            temp1[i] = fft.transform(pixels[i], TransformType.INVERSE);
+            temp1[i] = fft.transform(image[i], transformType);
         }
 
         Complex[][] temp2 = new Complex[h][w];
@@ -82,7 +48,7 @@ public class ImageFourier {
             for (int j = 0; j < 256; j++) {
                 col[j] = temp1[j][i];
             }
-            Complex[] transform = fft.transform(col, TransformType.INVERSE);
+            Complex[] transform = fft.transform(col, transformType);
             for (int j = 0; j < 256; j++) {
                 temp2[j][i] = transform[j];
             }
@@ -90,6 +56,4 @@ public class ImageFourier {
 
         return temp2;
     }
-
-
 }
