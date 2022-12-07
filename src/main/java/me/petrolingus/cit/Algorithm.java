@@ -39,11 +39,13 @@ public class Algorithm {
     }
 
     public static double[][] swap(double[][] matrix) {
-        double[][] result = new double[256][256];
-        for (int i = 0; i < 256; i++) {
-            for (int j = 0; j < 256; j++) {
-                int x = (j < 128) ? j + 128 : j - 128;
-                int y = (i < 128) ? i + 128 : i - 128;
+        int w = matrix[0].length;
+        int h = matrix.length;
+        double[][] result = new double[h][w];
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                int x = (j < w/2) ? j + w/2 : j - w/2;
+                int y = (i < h/2) ? i + h/2 : i - h/2;
                 result[i][j] = matrix[y][x];
             }
         }
@@ -51,21 +53,36 @@ public class Algorithm {
     }
 
     public static Complex[][] swap(Complex[][] matrix) {
-        Complex[][] result = new Complex[256][256];
-        for (int i = 0; i < 256; i++) {
-            for (int j = 0; j < 256; j++) {
-                int x = (j < 128) ? j + 128 : j - 128;
-                int y = (i < 128) ? i + 128 : i - 128;
+        int w = matrix[0].length;
+        int h = matrix.length;
+        Complex[][] result = new Complex[h][w];
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                int x = (j < w/2) ? j + w/2 : j - w/2;
+                int y = (i < h/2) ? i + h/2 : i - h/2;
                 result[i][j] = matrix[y][x];
             }
         }
         return result;
     }
 
+    @SuppressWarnings("DuplicatedCode")
     public static Complex[] swap(Complex[] vector) {
-        Complex[] result = new Complex[256];
-        for (int i = 0; i < 256; i++) {
-            int y = (i < 128) ? i + 128 : i - 128;
+        int n = vector.length;
+        Complex[] result = new Complex[n];
+        for (int i = 0; i < n; i++) {
+            int y = (i < n / 2) ? i + n / 2 : i - n / 2;
+            result[i] = vector[y];
+        }
+        return result;
+    }
+
+    @SuppressWarnings("DuplicatedCode")
+    public static double[] swap(double[] vector) {
+        int n = vector.length;
+        double[] result = new double[n];
+        for (int i = 0; i < n; i++) {
+            int y = (i < n / 2) ? i + n / 2 : i - n / 2;
             result[i] = vector[y];
         }
         return result;

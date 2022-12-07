@@ -45,11 +45,11 @@ public class ImageFourier {
         Complex[][] temp2 = new Complex[h][w];
         for (int i = 0; i < h; i++) {
             Complex[] col = new Complex[h];
-            for (int j = 0; j < 256; j++) {
+            for (int j = 0; j < h; j++) {
                 col[j] = temp1[j][i];
             }
             Complex[] transform = fft.transform(col, transformType);
-            for (int j = 0; j < 256; j++) {
+            for (int j = 0; j < h; j++) {
                 temp2[j][i] = transform[j];
             }
         }
