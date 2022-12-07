@@ -51,7 +51,13 @@ public class Controller {
 
         imageView.setImage(getImageFromPixels(monochromePixels));
 //        test1(monochromePixels);
-        process(monochromePixels);
+//        process(monochromePixels);
+    }
+
+    private void test2(double[][] monochromePixels) {
+
+
+
     }
 
     private Complex[][] complexRadonIdeal(double[][] monochromePixels) {
@@ -81,14 +87,14 @@ public class Controller {
         return temp;
     }
 
-    private Complex[][] radonIdealComplex(double[][] monochromePixels) {
-        Complex[][] temp = complexRadonIdeal(monochromePixels);
-        Complex[][] radon = new Complex[180][512];
-        for (int i = 0; i < 180; i++) {
-            radon[i] = ImageFourier.fft.transform(swap(temp[i]), TransformType.INVERSE);
-        }
-        return radon;
-    }
+//    private Complex[][] radonIdealComplex(double[][] monochromePixels) {
+//        Complex[][] temp = complexRadonIdeal(monochromePixels);
+//        Complex[][] radon = new Complex[180][512];
+//        for (int i = 0; i < 180; i++) {
+//            radon[i] = ImageFourier.fft.transform(swap(temp[i]), TransformType.INVERSE);
+//        }
+//        return radon;
+//    }
 
     private double[][] radonIdeal(double[][] monochromePixels) {
         Complex[][] temp = complexRadonIdeal(monochromePixels);
@@ -179,7 +185,7 @@ public class Controller {
             PixelReader pixelReader = canvas.snapshot(parameters, null).getPixelReader();
             for (int j = 0; j < IMAGE_SIZE; j++) {
                 for (int k = 0; k < IMAGE_SIZE; k++) {
-                    radon[i][j] += pixelReader.getColor(j, k).getBrightness();
+                    radon[i][j] += Math.exp(pixelReader.getColor(j, k).getBrightness());
                 }
             }
         }
@@ -253,18 +259,28 @@ public class Controller {
 
     private void process(double[][] monochromePixels) {
 
-        double[][] radon = radon(monochromePixels);
+        radonIdeal(monochromePixels);
+
+        double[][] radon = radonIdeal(monochromePixels);
 
         Complex[][] complexRadon = createComplexMatrix(512, radon.length);
         for (int i = 0; i < complexRadon.length; i++) {
             Complex[] transform = ImageFourier.fft.transform(radon[i], TransformType.FORWARD);
             complexRadon[i] = rightShift(transform, 256);
         }
-        for (int i = 0; i < 180; i++) {
-            for (int j = 0; j < 512; j++) {
-                complexRadon[i][j] = new Complex(complexRadon[i][j].getReal());
-            }
-        }
+
+        complexRadon = complexRadonIdeal(monochromePixels);
+
+//        Complex[][] complexRadon2 = complexRadonIdeal(monochromePixels);
+//
+//        for (int i = 0; i < 180; i++) {
+//            for (int j = 0; j < 512; j++) {
+//                if (i < 90) {
+//                    complexRadon[i][j] = complexRadon2[i][j];
+//                }
+//            }
+//        }
+
         drawComplex(complexRadon, imageView3, true);
 
         Complex[][] spectrum = createComplexMatrix(512, 512);
@@ -273,8 +289,8 @@ public class Controller {
             for (int j = 0; j < 512; j++) {
                 double x = j - 256;
                 double y = 256 - 256;
-                int x1 = (int) Math.round(x * Math.cos(angle) - y * Math.sin(angle));
-                int y1 = (int) Math.round(y * Math.cos(angle) + x * Math.sin(angle));
+                int x1 = (int) Math.round(x * Math.cos(angle));
+                int y1 = (int) Math.round(x * Math.sin(angle));
                 x1 += 256;
                 y1 += 256;
                 if (y1 < 0 || x1 < 0 || y1 > 511 || x1 > 511) {
@@ -286,8 +302,14 @@ public class Controller {
         drawComplex(spectrum, imageView4, true);
 
         Complex[][] recover = ImageFourier.ifft(spectrum);
+        Complex[][] recover2 = new Complex[512][512];
+        for (int i = 0; i < 512; i++) {
+            for (int j = 0; j < 512; j++) {
+                recover2[i][j] = new Complex(recover[i][j].getImaginary());
+            }
+        }
         drawComplex(recover, imageView5, false);
-        drawComplex(swap(recover), imageView6, false);
+        drawComplex(recover2, imageView6, false);
     }
 
     private void drawComplex(Complex[][] data, ImageView imageView, boolean isLog) {
