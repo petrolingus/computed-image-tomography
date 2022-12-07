@@ -77,7 +77,29 @@ public class Controller {
                 temp[i][j] = fft[y1][x1];
             }
         }
+
         return temp;
+    }
+
+    private Complex[][] radonIdealComplex(double[][] monochromePixels) {
+        Complex[][] temp = complexRadonIdeal(monochromePixels);
+        Complex[][] radon = new Complex[180][512];
+        for (int i = 0; i < 180; i++) {
+            radon[i] = ImageFourier.fft.transform(swap(temp[i]), TransformType.INVERSE);
+        }
+        return radon;
+    }
+
+    private double[][] radonIdeal(double[][] monochromePixels) {
+        Complex[][] temp = complexRadonIdeal(monochromePixels);
+        double[][] radon = new double[180][512];
+        for (int i = 0; i < 180; i++) {
+            Complex[] row = ImageFourier.fft.transform(swap(temp[i]), TransformType.INVERSE);
+            for (int j = 0; j < 512; j++) {
+                radon[i][j] = row[j].abs();
+            }
+        }
+        return radon;
     }
 
     private void test1(double[][] monochromePixels) {
@@ -150,9 +172,9 @@ public class Controller {
 
         for (int i = 0; i < 180; i++) {
             context.save();
-            context.translate(HALF_IMAGE_SIZE, HALF_IMAGE_SIZE);
-            context.rotate(i);
-            context.drawImage(image, -HALF_IMAGE_SIZE, -HALF_IMAGE_SIZE);
+            context.translate(HALF_IMAGE_SIZE + 0.5, HALF_IMAGE_SIZE + 0.5);
+            context.rotate(-i);
+            context.drawImage(image, -HALF_IMAGE_SIZE - 0.5, -HALF_IMAGE_SIZE - 0.5);
             context.restore();
             PixelReader pixelReader = canvas.snapshot(parameters, null).getPixelReader();
             for (int j = 0; j < IMAGE_SIZE; j++) {
@@ -178,27 +200,31 @@ public class Controller {
 
         double[][] radon = new double[180][IMAGE_SIZE];
 
-        for (int r = 0; r < 180; r += 1) {
+        for (int r = 0; r < radon.length; r++) {
             double[][] radonTemp = new double[IMAGE_SIZE][IMAGE_SIZE];
-            for (int i = 0; i < 512; i++) {
-                double angle = Math.toRadians(-r);
-                for (int j = 0; j < 512; j++) {
-                    double x = j - 256;
-                    double y = i - 256;
+            for (int i = 0; i < radonTemp.length; i++) {
+                double angle = Math.toRadians(r);
+                for (int j = 0; j < radonTemp.length; j++) {
+                    double x = j - pixels.length/2;
+                    double y = i - pixels.length/2;
                     int x1 = (int) Math.round(x * Math.cos(angle) - y * Math.sin(angle));
                     int y1 = (int) Math.round(y * Math.cos(angle) + x * Math.sin(angle));
-                    x1 += 256;
-                    y1 += 256;
+                    x1 += pixels.length/2;
+                    y1 += pixels.length/2;
                     if (y1 < 0 || x1 < 0 || y1 > 511 || x1 > 511) {
+                        radonTemp[i][j] = -0.5;
                         continue;
                     }
-                    radonTemp[y1][x1] = pixels[i][j];
+//                    radonTemp[y1][x1] = pixels[i][j];
+                    radonTemp[i][j] = pixels[y1][x1];
                 }
             }
             for (int i = 0; i < 512; i++) {
+                double sum = 0;
                 for (int j = 0; j < 512; j++) {
-                    radon[179 - r][i] += radonTemp[i][j];
+                     sum += radonTemp[i][j];
                 }
+                radon[radon.length - r - 1][i] = sum;
             }
         }
 
@@ -227,17 +253,22 @@ public class Controller {
 
     private void process(double[][] monochromePixels) {
 
-        double[][] radon = radon2(monochromePixels);
+        double[][] radon = radon(monochromePixels);
 
-        Complex[][] complexRadon = createComplexMatrix(512, 180);
-        for (int i = 0; i < 180; i++) {
+        Complex[][] complexRadon = createComplexMatrix(512, radon.length);
+        for (int i = 0; i < complexRadon.length; i++) {
             Complex[] transform = ImageFourier.fft.transform(radon[i], TransformType.FORWARD);
             complexRadon[i] = rightShift(transform, 256);
+        }
+        for (int i = 0; i < 180; i++) {
+            for (int j = 0; j < 512; j++) {
+                complexRadon[i][j] = new Complex(complexRadon[i][j].getReal());
+            }
         }
         drawComplex(complexRadon, imageView3, true);
 
         Complex[][] spectrum = createComplexMatrix(512, 512);
-        for (int i = 0; i < 180; i++) {
+        for (int i = 0; i < complexRadon.length; i++) {
             double angle = Math.toRadians(i);
             for (int j = 0; j < 512; j++) {
                 double x = j - 256;
@@ -249,7 +280,7 @@ public class Controller {
                 if (y1 < 0 || x1 < 0 || y1 > 511 || x1 > 511) {
                     continue;
                 }
-                spectrum[y1][x1] = complexRadon[i][j];
+                spectrum[y1][x1] = spectrum[y1][x1].add(complexRadon[i][j]).divide(2);
             }
         }
         drawComplex(spectrum, imageView4, true);
