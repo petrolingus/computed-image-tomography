@@ -5,7 +5,7 @@
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.RowConstraints?>
 
-<GridPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="1024.0" prefWidth="1536.0" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1" fx:controller="me.petrolingus.cit.Controller">
+<GridPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="1024.0" prefWidth="1536.0" xmlns="http://javafx.com/javafx/18" xmlns:fx="http://javafx.com/fxml/1" fx:controller="me.petrolingus.cit.Controller">
   <columnConstraints>
     <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
       <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
@@ -21,5 +21,6 @@
       <ImageView fx:id="imageView3" fitHeight="512.0" fitWidth="512.0" pickOnBounds="true" preserveRatio="true" GridPane.columnIndex="2" />
       <ImageView fx:id="imageView4" fitHeight="512.0" fitWidth="512.0" pickOnBounds="true" preserveRatio="true" GridPane.rowIndex="1" />
       <ImageView fx:id="imageView5" fitHeight="512.0" fitWidth="512.0" pickOnBounds="true" preserveRatio="true" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+      <ImageView fx:id="imageView6" fitHeight="512.0" fitWidth="512.0" pickOnBounds="true" preserveRatio="true" GridPane.columnIndex="2" GridPane.rowIndex="1" />
    </children>
 </GridPane>
