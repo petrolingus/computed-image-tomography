@@ -112,15 +112,16 @@ public class Controller {
         return sinogram;
     }
 
-    static int[][] fbp(int[][] sinogram, int res, boolean full360, boolean filter, final boolean bitreveredOrder) {
+    static double[][] fbp(double[][] sinogram, int res, boolean full360, boolean filter, final boolean bitreveredOrder) {
 
         double numPi = full360 ? 2 : 1;
         int NUM_BACK_PROJECTIONS = 256;
 
-        int[][] result = new int[512][512];
+        double[][] result = new double[512][512];
 
         for (int ipx = 0; ipx < 512; ipx++) {
             for (int jpx = 0; jpx < 512; jpx++) {
+
                 double x = (jpx * 1.0 / (512 - 1.0)) - 0.5;
                 double y = (ipx * 1.0 / (512 - 1.0)) - 0.5;
 
@@ -128,8 +129,6 @@ public class Controller {
                 y *= 2;
 
                 double sumR = 0;
-                double sumG = 0;
-                double sumB = 0;
                 int numElements = 0;
                 double helperA = Math.PI * numPi / 512;
                 int n = 512;
@@ -150,10 +149,7 @@ public class Controller {
                     r /= 2;
                     int iR = (int) (r * (512 - 1));
                     if (iR >= 0 && iR < 512) {
-                        int color = sinogram[iA][iR];
-                        sumR += (color & 0x00FF0000) >> 16;
-                        sumG += (color & 0x0000FF00) >> 8;
-                        sumB += (color & 0x000000FF);
+                        sumR += sinogram[iA][iR];
                         numElements++;
                     }
 
@@ -164,11 +160,7 @@ public class Controller {
                 } else {
                     sumR /= Math.max(1, numElements);
                     sumR = Math.max(0, sumR);
-                    sumG /= Math.max(1, numElements);
-                    sumG = Math.max(0, sumG);
-                    sumB /= Math.max(1, numElements);
-                    sumB = Math.max(0, sumB);
-                    result[ipx][jpx] = rgb_fromNormalized((float) clampD(0, sumR, 1), (float) clampD(0, sumG, 1), (float) clampD(0, sumB, 1));
+                    result[ipx][jpx] = clampD(0, sumR, 1);
                 }
             }
         }
@@ -190,6 +182,8 @@ public class Controller {
         double[][] sinogram = getSinogram(monochromePixels);
         imageView2.setImage(getImageFromPixels(sinogram));
 
+        double[][] res = fbp(sinogram, 512, false, false, false);
+        imageView3.setImage(getImageFromPixels(res));
     }
 
     public static final int rgb_fromNormalized(final double r, final double g, final double b) {
