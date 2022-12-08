@@ -31,7 +31,7 @@ public class Controller {
     public void initialize() throws FileNotFoundException {
 
         // Load image
-        URL resource = Main.class.getResource("aqua256.jpg");
+        URL resource = Main.class.getResource("phantom.png");
         if (resource == null) {
             return;
         }
@@ -55,13 +55,10 @@ public class Controller {
         imageView.setImage(getImageFromPixels(monochromePixels));
 //        test1(monochromePixels);
 //        process(monochromePixels);
-//        test2(monochromePixels);
-
-//        int[][] sinogram = getSinogram(monochromePixels);
-//        imageView2.setImage(getImageFromPixels(sinogram));
+        test2(monochromePixels);
     }
 
-    private int[][] getSinogram(int[][] monochromePixels) {
+    private double[][] getSinogram(double[][] monochromePixels) {
 
         double res = monochromePixels.length;
         double sqrt2 = Math.sqrt(2.0);
@@ -71,7 +68,7 @@ public class Controller {
         double imgDiagonal = Math.sqrt(w * w + h * h) + 1;
         boolean ALLOW_TRANSPARENT_RADON = false;
 
-        int[][] sinogram = new int[h][w];
+        double[][] sinogram = new double[h][w];
 
         for (int ipx = 0; ipx < h; ipx++) {
             for (int jpx = 0; jpx < w; jpx++) {
@@ -82,8 +79,6 @@ public class Controller {
                 r += centerShift;
 
                 double sumR = 0;
-                double sumG = 0;
-                double sumB = 0;
                 int numElements = 0;
 
                 double sin = Math.sin(a);
@@ -92,6 +87,7 @@ public class Controller {
                 double yC = r * sin;
 
                 for (int i = 0; i < imgDiagonal; i++) {
+
                     double t = i * 1.0 / imgDiagonal;
                     t -= 0.5;
                     t *= 2 * sqrt2;
@@ -103,24 +99,13 @@ public class Controller {
                     y = (y + 1) / 2;
 
                     if (inUnitRange(x) && inUnitRange(y)) {
-                        int val = Img.interpolateARGB(monochromePixels, w, h, (float) x, (float) y);
-                        if (Img.a(val) > 0 || !ALLOW_TRANSPARENT_RADON) {
-                            sumR += Img.r_normalized(val);
-                            sumG += Img.g_normalized(val);
-                            sumB += Img.b_normalized(val);
-                            numElements++;
-                        }
+                        double val = Img.interpolateARGB(monochromePixels, w, h, (float) x, (float) y);
+                        sumR += val;
+                        numElements++;
                     }
                 }
 
-                if (numElements == 0 && ALLOW_TRANSPARENT_RADON) {
-//                    px.setValue(0);
-                } else {
-                    sumR /= Math.max(1, numElements);
-                    sumG /= Math.max(1, numElements);
-                    sumB /= Math.max(1, numElements);
-                    sinogram[ipx][jpx] = rgb_fromNormalized(sumR, sumG, sumB);
-                }
+                sinogram[ipx][jpx] = sumR / Math.max(1, numElements);
             }
         }
 
@@ -200,13 +185,10 @@ public class Controller {
         return Integer.reverse(i) >>> leading;
     }
 
-    private void test2(int[][] monochromePixels) {
+    private void test2(double[][] monochromePixels) {
 
-        int[][] sinogram = getSinogram(monochromePixels);
+        double[][] sinogram = getSinogram(monochromePixels);
         imageView2.setImage(getImageFromPixels(sinogram));
-
-//        int[][] result = fbp(sinogram, 512, false, false, false);
-//        imageView3.setImage(getImageFromPixels(result));
 
     }
 
