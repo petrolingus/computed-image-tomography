@@ -115,23 +115,20 @@ public class Controller {
     static double[][] fbp(double[][] sinogram, int res, boolean full360, boolean filter, final boolean bitreveredOrder) {
 
         double numPi = full360 ? 2 : 1;
-        int NUM_BACK_PROJECTIONS = 256;
+        int NUM_BACK_PROJECTIONS = res;
 
-        double[][] result = new double[512][512];
+        double[][] result = new double[res][res];
 
-        for (int ipx = 0; ipx < 512; ipx++) {
-            for (int jpx = 0; jpx < 512; jpx++) {
+        for (int ipx = 0; ipx < res; ipx++) {
+            for (int jpx = 0; jpx < res; jpx++) {
 
-                double x = (jpx * 1.0 / (512 - 1.0)) - 0.5;
-                double y = (ipx * 1.0 / (512 - 1.0)) - 0.5;
-
-                x *= 2;
-                y *= 2;
+                double x = ((jpx * 1.0 / (res - 1.0)) - 0.5) * 2.0;
+                double y = ((ipx * 1.0 / (res - 1.0)) - 0.5) * 2.0;
 
                 double sumR = 0;
                 int numElements = 0;
-                double helperA = Math.PI * numPi / 512;
-                int n = 512;
+                double helperA = Math.PI * numPi / sinogram.length;
+                int n = sinogram.length;
 
                 for (int i = 0; i < Integer.highestOneBit(n) << 1 && i < NUM_BACK_PROJECTIONS; i++) {
                     int iA;
@@ -145,19 +142,16 @@ public class Controller {
                             break;
                     }
                     double a = iA * helperA;
-                    double r = x * Math.cos(a) + y * Math.sin(a) + 1;
-                    r /= 2;
-                    int iR = (int) (r * (512 - 1));
-                    if (iR >= 0 && iR < 512) {
+                    double r = (x * Math.cos(a) + y * Math.sin(a) + 1) / 2;
+                    int iR = (int) (r * (sinogram[0].length - 1));
+                    if (iR >= 0 && iR < sinogram[0].length) {
                         sumR += sinogram[iA][iR];
                         numElements++;
                     }
 
                 }
 
-                if (numElements == 0) {
-//                    px.setValue(0);
-                } else {
+                if (numElements != 0) {
                     sumR /= Math.max(1, numElements);
                     sumR = Math.max(0, sumR);
                     result[ipx][jpx] = clampD(0, sumR, 1);
