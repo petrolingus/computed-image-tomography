@@ -112,10 +112,14 @@ public class Controller {
         return sinogram;
     }
 
-    static double[][] fbp(double[][] sinogram, int res, boolean full360, boolean filter, final boolean bitreveredOrder) {
+    double[][] fbp(double[][] sinogram, int res, boolean full360, boolean filter, final boolean bitreveredOrder) {
 
         double numPi = full360 ? 2 : 1;
         int NUM_BACK_PROJECTIONS = res;
+
+        if (filter) {
+            filter(sinogram);
+        }
 
         double[][] result = new double[res][res];
 
@@ -162,6 +166,32 @@ public class Controller {
         return result;
     }
 
+    void filter(double[][] sinogram) {
+        for (int row = 0; row < sinogram.length; row++) {
+
+            Complex[] realcomplex = new Complex[sinogram[0].length];
+            for (int i = 0; i < realcomplex.length; i++) {
+                realcomplex[i] = new Complex(sinogram[row][i]);
+            }
+
+            realcomplex = ImageFourier.fft.transform(realcomplex, TransformType.FORWARD);
+            realcomplex = rightShift(realcomplex, realcomplex.length / 2);
+
+            // HOLY MAGIC (MAYBE RAMP FILTERING)
+            for (int i = 0; i < realcomplex.length; i++) {
+                double x = ((i * 1.0 / realcomplex.length) - 0.5) * 4;
+                realcomplex[i] = realcomplex[i].multiply(Math.abs(x) * (1 - Math.abs(x)) * 1);
+            }
+
+            realcomplex = rightShift(realcomplex, realcomplex.length / 2);
+            realcomplex = ImageFourier.fft.transform(realcomplex, TransformType.INVERSE);
+
+            for (int i = 0; i < realcomplex.length; i++) {
+                sinogram[row][i] = realcomplex[i].abs();
+            }
+        }
+    }
+
     static double clampD(double lo, double val, double hi) {
         return Math.max(lo, Math.min(val, hi));
     }
@@ -176,7 +206,7 @@ public class Controller {
         double[][] sinogram = getSinogram(monochromePixels);
         imageView2.setImage(getImageFromPixels(sinogram));
 
-        double[][] res = fbp(sinogram, 512, false, false, false);
+        double[][] res = fbp(sinogram, 512, false, true, false);
         imageView3.setImage(getImageFromPixels(res));
     }
 
@@ -225,15 +255,6 @@ public class Controller {
 
         return temp;
     }
-
-//    private Complex[][] radonIdealComplex(double[][] monochromePixels) {
-//        Complex[][] temp = complexRadonIdeal(monochromePixels);
-//        Complex[][] radon = new Complex[180][512];
-//        for (int i = 0; i < 180; i++) {
-//            radon[i] = ImageFourier.fft.transform(swap(temp[i]), TransformType.INVERSE);
-//        }
-//        return radon;
-//    }
 
     private double[][] radonIdeal(double[][] monochromePixels) {
         Complex[][] temp = complexRadonIdeal(monochromePixels);
